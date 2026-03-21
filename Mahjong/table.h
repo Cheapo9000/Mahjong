@@ -1,0 +1,147 @@
+/**
+ * @file table.h
+ * @brief Represents a Mahjong table with players, a discard pile, a deck of tiles, a drawn tile, and the current player.
+ *
+ * Provides methods for setting, getting, and displaying each value.
+ */
+#ifndef TABLE_H
+#define TABLE_H
+
+#include <vector>
+#include <algorithm>
+#include "player.h"
+#include "deck.h"
+using namespace std;
+
+/**
+ * @class table
+ * @brief Represents a Mahjong table with players, a discard pile, a deck of tiles, a drawn tile, and the current player.
+ *
+ * Provides methods for setting, getting, and displaying each value.
+ */
+class table {
+	const int maxPlayers = 4;
+	vector<player> players;
+	vector<tile> discardPile;
+	deck walls;
+	tile drawnTile;
+	int currentPlayer;
+
+public:
+	/**
+	 * @brief Sets the initial values of the table with number of players equal to maxPlayers, an empty discard pile, and the current player at zero.
+	 */
+	table();
+
+	/**
+	 * @brief Sets a player at the next empty seat with the given name.
+	 * @return An integer that contains the seat number of the player or a negative one if there were no more seats available.
+	 */
+	int seatPlayer(string name);
+
+	/**
+	 * @brief Removes the plyaer at the given seat position.
+	 * @throw out_of_range exception if the seat posiiton is above or below the indices of available seats specified by maxPlayers.
+	 */
+	void removePlayer(int seatPosition);
+
+	/**
+	 * @brief Deals a sorted hand from the deck to the player in the specified seat position.
+	 * @throw out_of_range exception if the seat posiiton is above or below the indices of available seats specified by maxPlayers.
+	 */
+	void dealHand(int seatPosition);
+
+	/**
+	 * @brief Deals a sorted hand to each seated player from the deck.
+	 * @throw out_of_range exception can be thrown if the seat posiiton is above or below the indices of available seats specified by maxPlayers.
+	 */
+	void dealHands();
+
+	/**
+	 * @brief Gets a tile a random from the deck.
+	 * @return A tile that was removed from the deck.
+	 */
+	tile drawTile();
+
+	/**
+	 * @brief Adds the drawn tile to the discard pile and clears the value of the drawn tile.
+	 */
+	void discardDrawn();
+
+	/**
+	 * @brief Adds the drawn tile to the sorted hand of the current player and clears the value of the drawn tile.
+	 */
+	void keepDrawn();
+
+	/**
+	 * @brief Removes the tile at the given index from the sorted hand of the current player and adds it onto a sorted discard pile. The last tile is not sorted since it may be taken by other players.
+	 * @throw out_of_range exception if the index is above or below the indices of tiles in the player's hand.
+	 */
+	void discardTile(int index);
+
+	/**
+	 * @brief Sets the current player.
+	 * @throw out_of_range exception if the seat is above or below the indices of players.
+	 */
+	void setCurrentPlayer(int seat);
+
+	/**
+	 * @brief Sets the current player to the next player.
+	 */
+	void nextPlayer();
+
+	/**
+	 * @brief Displays a welcome message addressing each player with a name.
+	 */
+	void welcomePlayers() const;
+
+	/**
+	 * @brief Shows the table from the point of view of the provided seat position.
+	 */
+	void displayTable(int seatPosition) const;
+
+	/**
+	 * @brief Shows the discard pile contents.
+	 */
+	void displayDiscardPile() const;
+
+	/**
+	 * @brief Checks if the current player is at a win state considering their hand and the drawn tile.
+	 * @return A bool value containing true if the player hand and the drawn tile equals a winning hand.
+	 */
+	bool checkWin() const;
+
+	/**
+	 * @brief Gets the drawn tile.
+	 * @return A tile that contains the drawn tile information.
+	 */
+	tile getDrawnTile() const;
+
+	/**
+	 * @brief Gets the player at the given seat position.
+	 * @return A pointer to the player at the index of seatPosition.
+	 * @throw out_of_range exception if the seat position is above or below the indices of players.
+	 */
+	player* getPlayer(int seatPosition);
+
+	/**
+	 * @brief Gets the player's hand at the given seat position.
+	 * @return A pointer to the vector of tiles of the player's hand at the index of seatPosition.
+	 * @throw out_of_range exception if the seat position is above or below the indices of players.
+	 */
+	vector<tile>* getPlayerHand(int seatPosition);
+
+	/**
+	 * @brief Gets the deck.
+	 * @return A pointer to the deck.
+	 */
+	deck* getDeck();
+
+	/**
+	 * @brief Gets the current player.
+	 * @return An integer containing the seat position of the current player.
+	 */
+	int getCurrentPlayer() const;
+};
+
+#endif // TABLE_H
