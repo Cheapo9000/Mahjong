@@ -157,7 +157,10 @@ int main()
                         }
                         else {
                             try {
-                                board.discardTile(index);
+                                if (!board.discardTile(index)) {
+                                    cout << "Invalid tile selected. You must choose a tile that is not visible." << endl;
+                                    continue;
+                                }
                             }
                             catch (const std::exception& e) {
                                 cerr << "Error: " << e.what() << endl;
