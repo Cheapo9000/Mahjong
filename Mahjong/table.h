@@ -76,8 +76,9 @@ public:
 	/**
 	 * @brief Removes the tile at the given index from the sorted hand of the current player and adds it onto a sorted discard pile. The last tile is not sorted since it may be taken by other players.
 	 * @throw out_of_range exception if the index is above or below the indices of tiles in the player's hand.
+	 * @return A bool if the tile was successfully discarded.
 	 */
-	void discardTile(int index);
+	bool discardTile(int index);
 
 	/**
 	 * @brief Sets the current player.
@@ -104,6 +105,17 @@ public:
 	 * @brief Shows the discard pile contents.
 	 */
 	void displayDiscardPile() const;
+
+	/**
+	 * @brief Checks if the current player can Chi the tile in the discard pile.
+	 * @return A bool value containing true if the player can retrieve the tile from the discard pile.
+	 */
+	bool canChi() const;
+
+	/**
+	 * @brief Places the last tile in the discard pile into the drawn tile
+	 */
+	void chi();
 
 	/**
 	 * @brief Checks if the current player is at a win state considering their hand and the drawn tile.

@@ -30,6 +30,7 @@ class tile {
 
     int num;
     suit kind;
+    bool shown;
     const int maxNum = 10;
 
 public:
@@ -57,6 +58,7 @@ public:
         } else {
             this->num = 0;
         }
+        this->shown = false;
     }
 
     /**
@@ -65,6 +67,7 @@ public:
     tile(const tile& oTile) {
         this->num = oTile.getNumber();
         this->kind = oTile.getSuit();
+        this->shown = oTile.isShown();
     }
 
     /**
@@ -74,6 +77,7 @@ public:
     tile& operator=(const tile& other) {
         this->num = other.getNumber();
         this->kind = other.getSuit();
+        this->shown = other.isShown();
 
         return *this;
     }
@@ -88,6 +92,15 @@ public:
             return this->kind < other.kind;
 
         return this->num < other.num;
+    }
+
+    /**
+     * @brief Equality operator overloaded to ensure the comparison is handled correctly.
+     * @return A bool with the value true if the other tile is equal to this tile.
+     */
+    bool operator==(const tile& other) const
+    {
+        return this->kind == other.kind && this->num == other.num;
     }
 
     /**
@@ -117,11 +130,19 @@ public:
     }
 
     /**
+     * @brief Sets whether the tile should be visible to other players or not.
+     */
+    void setShown(bool show) {
+        this->shown = show;
+    }
+
+    /**
      * @brief Sets the tile values to initial state of zero and none respectively.
      */
     void reset() {
         this->num = 0;
         this->kind = none;
+        this->shown = false;
     }
 
     /**
@@ -140,6 +161,14 @@ public:
      */
     int getNumber() const {
         return this->num;
+    }
+
+    /**
+     * @brief Gets whether or not the tile should be visibnle to other players
+     * @return A bool containing true if it should be shown, false otherwise.
+     */
+    bool isShown() const {
+        return this->shown;
     }
 
     /**

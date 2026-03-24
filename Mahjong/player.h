@@ -22,6 +22,7 @@ class player {
 	string name;
 	int position;
 	vector<tile> hand;
+	bool hasShown;
 
 public:
 	/**
@@ -43,6 +44,11 @@ public:
 	 * @brief Sets the hand of the player to the given hand tiles.
 	 */
 	void setHand(vector<tile>& hand);
+
+	/**
+	 * @brief Sets the state determining if any tiles are visible.
+	 */
+	void setShownTiles(bool shown);
 
 	/**
 	 * @brief Sets the initial values of the player to a blank name, a negative seat position, and an empty hand.
@@ -81,6 +87,12 @@ public:
 	 * @return A pointer to a vector of tiles that contains the hand of the player.
 	 */
 	vector<tile>* getHand();
+
+	/**
+	 * @brief Checks if the player has any shown tiles
+	 * @return A bool contianing true if there are any tiles shown.
+	 */
+	bool hasShownTiles();
 };
 
 #endif

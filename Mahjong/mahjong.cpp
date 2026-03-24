@@ -71,10 +71,14 @@ int main()
     int curPlayer = 0;
     regex keepPattern("k", regex_constants::icase);
     regex discardPattern("d", regex_constants::icase);
+    regex yesPattern("y", regex_constants::icase);
+    regex noPattern("n", regex_constants::icase);
+    bool hasKept;
 
     // Main game loop continues until players run out of tiles.
     while (board.getDeck()->getTiles()->size() > 0) {
         curPlayer = board.getCurrentPlayer();
+        hasKept = false;
         try {
             playerName = board.getPlayer(curPlayer)->getName();
             cout << playerName << ", it's your turn!" << endl;
@@ -83,10 +87,38 @@ int main()
             cerr << "Error: " << e.what() << endl;
             return 1;
         }
-        board.drawTile();
         cout << "Discard pile: " << endl;
         board.displayDiscardPile();
-        cout << "Drawing tile: " << board.getDrawnTile().getDisplayValue() << endl;
+
+        if (board.canChi()) {
+            board.displayTable(curPlayer);
+
+            do {
+                cout << "Would you like to Chi? Input Y as yes and N as no and press ENTER to submit your choice." << endl;
+                getline(cin, input);
+
+                if (regex_search(input, yesPattern)) {
+                    board.chi();
+                    hasKept = true;
+
+                    cout << "Discard pile: " << endl;
+                    board.displayDiscardPile();
+                }
+                else if (regex_search(input, noPattern)) {
+                    board.drawTile();
+                    cout << "Drawing tile: " << board.getDrawnTile().getDisplayValue() << endl;
+                    break;
+                }
+                else{
+                    cout << "Invalid input provided." << endl;
+                }
+            } while (true);
+        }
+        else {
+            board.drawTile();
+            cout << "Drawing tile: " << board.getDrawnTile().getDisplayValue() << endl;
+        }
+
         board.displayTable(curPlayer);
 
         if (board.checkWin()) {
@@ -96,8 +128,13 @@ int main()
 
         // Player chooses to keep or discard drawn tile.
         do {
-            cout << "Input K to keep or D to discard and press ENTER to submit your choice." << endl;
-            getline(cin, input);
+            if (!hasKept) {
+                cout << "Input K to keep or D to discard and press ENTER to submit your choice." << endl;
+                getline(cin, input);
+            }
+            else {
+                input = "k";
+            }
 
             if (regex_search(input, keepPattern)) {
                 // Player chooses which tile in their hand to discard. They must discard.

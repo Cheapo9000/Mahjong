@@ -72,10 +72,14 @@ void table::keepDrawn() {
 	drawnTile.reset();
 }
 
-void table::discardTile(int index) {
+bool table::discardTile(int index) {
 	vector<tile>* hand = players.at(currentPlayer).getHand();
 	if (index < 0 || index >= hand->size()) {
 		throw out_of_range("Index out of range");
+	}
+
+	if (hand->at(index).isShown()) {
+		return false;
 	}
 
 	discardPile.push_back(hand->at(index));
@@ -88,6 +92,8 @@ void table::discardTile(int index) {
 	}
 	hand->pop_back();
 	sort(hand->begin(), hand->end());
+
+	return true;
 }
 
 void table::setCurrentPlayer(int seat) {
@@ -155,6 +161,15 @@ void table::displayTable(int seatPosition) const {
 	for (int i = 0; i < hand.size(); ++i) {
 		cout << "|" << hand.at(i).getDisplayValue();
 	}
+	cout << "|" << endl;
+	for (int i = 0; i < hand.size(); ++i) {
+		if (hand.at(i).isShown()) {
+			cout << "|**";
+		}
+		else {
+			cout << "|  ";
+		}
+	}
 	cout << "|" << endl << endl;
 }
 
@@ -166,6 +181,68 @@ void table::displayDiscardPile() const {
 		cout << "|" << discardPile.at(i).getDisplayValue();
 	}
 	cout << "|" << endl << endl;
+}
+
+bool table::canChi() const {
+	if (discardPile.size() < 1) {
+		return false;
+	}
+
+	tile lastTile = discardPile.at(discardPile.size() - 1);
+	if (lastTile.getSuit() == wind || lastTile.getSuit() == dragon) {
+		return false;
+	}
+
+	// TODO: Make the copy of the player hand only contain unique tiles
+	vector<tile> hand = players.at(currentPlayer).c_getHand();
+	tile curTile;
+	for (int i = 0; i < hand.size(); ++i) {
+		curTile = hand.at(i);
+		if (curTile.getSuit() == lastTile.getSuit()) {
+			if (lastTile.getNumber() + 1 == curTile.getNumber()) {
+				if (i + 1 >= hand.size()) {
+					return false;
+				}
+				// CHeck if the lastTile is the start of a straight
+				else if ((curTile.getSuit() == hand.at(i + 1).getSuit())
+					&& (curTile.getNumber() + 1 == hand.at(i + 1).getNumber())) {
+					return true;
+				}
+				else {
+					return false;
+				}
+			}
+			else if (lastTile.getNumber() == curTile.getNumber() + 1) {
+				if ((i + 2 >= hand.size()) || (i - 1 < 0)) {
+					return false;
+				}
+				// Check if the lastTile is the end of a straght
+				else if ((curTile.getSuit() == hand.at(i - 1).getSuit())
+					&& (curTile.getNumber() - 1 == hand.at(i - 1).getNumber())) {
+					return true;
+				}
+				// Check if the lastTle is the middle of a staight
+				else if ((lastTile.getSuit() == hand.at(i + 2).getSuit())
+					&& (lastTile.getNumber() + 1 == hand.at(i + 2).getNumber())) {
+					return true;
+				}
+				else {
+					return false;
+				}
+			}
+		}
+	}
+
+	return false;
+}
+
+void table::chi() {
+	if (!canChi()) {
+		return;
+	}
+
+	drawnTile = discardPile.at(discardPile.size() - 1);
+	discardPile.pop_back();
 }
 
 bool table::checkWin() const {

@@ -16,10 +16,15 @@ void player::setHand(vector<tile>& hand) {
 	this->hand = hand;
 }
 
+void player::setShownTiles(bool shown) {
+	this->hasShown = shown;
+}
+
 void player::reset() {
 	this->name = "";
 	this->position = -1;
 	this->hand = vector<tile>();
+	this->hasShown = false;
 }
 
 string player::getName() const {
@@ -40,4 +45,8 @@ vector<tile> player::c_getHand() const {
 
 vector<tile>* player::getHand() {
 	return &(this->hand);
+}
+
+bool player::hasShownTiles() {
+	return hasShown;
 }
