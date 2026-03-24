@@ -146,7 +146,8 @@ void table::displayTable(int seatPosition) const {
 	for (int i = 0; i < hand.size(); ++i) {
 		if (i < 9) {
 			cout << "| " << i + 1;
-		} else{
+		}
+		else {
 			cout << "|" << i + 1;
 		}
 	}
@@ -168,7 +169,268 @@ void table::displayDiscardPile() const {
 }
 
 bool table::checkWin() const {
-	// TODO: Check win condition
+	// There are two win conditions.
+	// First win condition: 4 sets of 3 and a pair
+	// Second win condition: 1 set of 4, 2 sets of 3, and 2 pairs
+
+	vector<tile> hand = players.at(currentPlayer).c_getHand();
+	// temporarily include the drawn tile to see if this tile makes a winning hand
+	hand.push_back(drawnTile);
+	// sorting makes it easier to identify a winning hand
+	sort(hand.begin(), hand.end());
+
+	tile prevTile;
+	tile curTile;
+	int pair = 0;
+	int triple = 0;
+	int quad = 0;
+	int match = false; //Is this building a matching set
+	int setCount = 1; //The first tile is starting a set
+	// start at 1 because 0 is the start of the set
+	for (int i = 1; i < hand.size(); ++i) {
+		prevTile = hand.at(i - 1);
+		curTile = hand.at(i);
+		if (prevTile.getSuit() == curTile.getSuit()) {
+			if (prevTile.getNumber() + 1 == curTile.getNumber()) {
+				++setCount;
+				if (setCount == 3) {
+					++triple;
+					setCount = 1;
+					++i;
+				}
+			}
+			else if (prevTile.getNumber() == curTile.getNumber()) {
+				if (setCount > 1 && !match) {
+					if (setCount == 2) {
+						++pair;
+						setCount = 0;
+						if (pair > 2) {
+							return false;
+						}
+					}
+					else if (setCount == 3) {
+						++triple;
+						setCount = 0;
+					}
+					else if (setCount == 4) {
+						++quad;
+						setCount = 0;
+					}
+				}
+				++setCount;
+				if (setCount == 3 && match) {
+					// Check if we have triple or quad & mark accordingly
+					// Check if this is the last tile in the hand
+					if (i + 1 >= hand.size()) {
+						++triple;
+						setCount = 0;
+						match = false;
+						break; // This is the last tile so exit the loop
+					}
+					else { // There is another next tile so check for quad
+						tile nextTile = hand.at(i + 1);
+						if ((curTile.getSuit() == nextTile.getSuit())
+							&& (curTile.getNumber() == nextTile.getNumber())) {
+							++quad;
+							setCount = 1;
+							match = false;
+							i += 2; // This can go beyond the hand size, but the loop check will prevent out of bounds indices
+							continue;
+						}
+						else {
+							// Check for edge case to determine if it's a double next to a straight or a triple next to a straight
+							if ((curTile.getSuit() == nextTile.getSuit())
+								&& (curTile.getNumber() + 1 == nextTile.getNumber())) {
+								int tempTriple = 0;
+								int tempSetCount = 2;
+								tile tempPrevTile;
+								tile tempCurTile;
+								for (int j = i + 2; j < hand.size(); ++j) {
+									tempPrevTile = hand.at(j - 1);
+									tempCurTile = hand.at(j);
+									if ((tempPrevTile.getSuit() == tempCurTile.getSuit())
+										&& (tempPrevTile.getNumber() + 1 == tempCurTile.getNumber())) {
+										++tempSetCount;
+										if (tempSetCount == 3) {
+											++tempTriple;
+											tempSetCount = 0;
+										}
+									}
+									else {
+										if (tempSetCount == 0 && tempTriple > 0) {
+											triple += tempTriple;
+											setCount = 1;
+											++pair;
+											match = false;
+											i = j;
+											break;
+										}
+										else if (tempSetCount == 1 && tempTriple > 0) {
+											// Starting assumption was a pair and a straight,
+											// but actually was two triples
+											triple += tempTriple + 1;
+											setCount = 0;
+											match = false;
+											i = j - 1;
+											++i;
+											break;
+										}
+										else {
+											++pair;
+											triple += tempTriple;
+											setCount = 1;
+											match = false;
+											i = j - tempSetCount;
+											break;
+										}
+									}
+								}
+							}
+							else {
+								++triple;
+								setCount = 1;
+								match = false;
+								++i;
+							}
+							continue;
+						}
+					}
+				}
+				else if (setCount == 2 && !match) {
+					if (i + 1 >= hand.size()) {
+						++pair;
+						setCount = 1;
+						if (pair > 2) {
+							return false;
+						}
+						++i;
+						break; // This is the last tile so exit the loop
+					}
+					else { // There is another next tile so check for triple
+						tile nextTile = hand.at(i + 1);
+						// Check for edge case to determine if it's a double next to a straight or a triple next to a straight
+						if ((curTile.getSuit() == nextTile.getSuit())
+							&& (curTile.getNumber() + 1 == nextTile.getNumber())) {
+							++pair;
+							match = false;
+							setCount = 1;
+							if (pair > 2) {
+								return false;
+							}
+							++i;
+							continue;
+						}
+						else if ((curTile.getSuit() == nextTile.getSuit())
+							&& (curTile.getNumber() == nextTile.getNumber())) {
+							int tempTriple = 0;
+							int tempSetCount = 1;
+							tile tempPrevTile;
+							tile tempCurTile;
+							for (int j = i + 2; j < hand.size(); ++j) {
+								tempPrevTile = hand.at(j - 1);
+								tempCurTile = hand.at(j);
+								if ((tempPrevTile.getSuit() == tempCurTile.getSuit())
+									&& (tempPrevTile.getNumber() + 1 == tempCurTile.getNumber())) {
+									++tempSetCount;
+									if (tempSetCount == 3) {
+										++tempTriple;
+										tempSetCount = 0;
+									}
+								}
+								if ((tempPrevTile.getSuit() == tempCurTile.getSuit())
+									&& (tempPrevTile.getNumber() == tempCurTile.getNumber())) {
+									// Could be a quad or a triple with a straight
+									int tempTriple2 = 0;
+									int tempSetCount2 = 1;
+									tile tempPrevTile2;
+									tile tempCurTile2;
+									for (int k = j + 1; k < hand.size(); ++k) {
+										tempPrevTile2 = hand.at(k - 1);
+										tempCurTile2 = hand.at(k);
+										if ((tempPrevTile.getSuit() == tempCurTile.getSuit())
+											&& (tempPrevTile.getNumber() + 1 == tempCurTile.getNumber())) {
+											// Check if triple and straights or quad and straights
+											++tempSetCount2;
+											if (tempSetCount2 == 3) {
+												++tempTriple2;
+												tempSetCount2 = 0;
+											}
+										}
+										else {
+											if (tempSetCount2 == 2 && tempTriple2 > 0) {
+												++quad;
+												triple += tempTriple + tempTriple2;
+												setCount = 1;
+												match = false;
+												i = k - 1;
+												break;
+											}
+											else {
+												++quad;
+												triple += tempTriple + tempTriple2;
+												setCount = 1;
+												match = false;
+												i = k;
+												break;
+											}
+										}
+									}
+								}
+								else {
+									if (tempSetCount == 0 && tempTriple > 0) {
+										triple += tempTriple;
+										setCount = 1;
+										++pair;
+										match = false;
+										i = j;
+										break;
+									}
+									else if (tempSetCount == 1 && tempTriple > 0) {
+										// Starting assumption was a pair and a straight,
+										// but actually was two triples
+										triple += tempTriple + 1;
+										setCount = 0;
+										match = false;
+										i = j - 1;
+										++i;
+										break;
+									}
+									else {
+										++triple;
+										triple += tempTriple;
+										setCount = 1;
+										match = false;
+										i = j - tempSetCount;
+										++i;
+										break;
+									}
+								}
+							}
+							if (i + 2 < hand.size()) {
+								// If the for loop was entered then don't update match to true
+								continue;
+							}
+						}
+					}
+				}
+				match = true;
+			}
+			else {
+				return false;
+			}
+		}
+		else {
+			return false;
+		}
+	}
+
+	if (pair == 1 && (triple == 4 && quad == 0)) {
+		return true;
+	}
+	else if (pair == 2 && (triple == 2 && quad == 1)) {
+		return true;
+	}
+
 	return false;
 }
 

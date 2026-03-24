@@ -90,7 +90,7 @@ int main()
         board.displayTable(curPlayer);
 
         if (board.checkWin()) {
-            cout << playerName << "WINS!" << endl;
+            cout << playerName << " WINS!" << endl;
             return 0;
         }
 
