@@ -103,6 +103,7 @@ int main()
 
                     cout << "Discard pile: " << endl;
                     board.displayDiscardPile();
+                    break;
                 }
                 else if (regex_search(input, noPattern)) {
                     board.drawTile();

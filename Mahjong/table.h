@@ -118,6 +118,11 @@ public:
 	void chi();
 
 	/**
+	 * @brief Reveals the other two tiles in the consecutive set that the drawn tile completes.
+	 */
+	void revealSet(vector<tile>* hand);
+
+	/**
 	 * @brief Checks if the current player is at a win state considering their hand and the drawn tile.
 	 * @return A bool value containing true if the player hand and the drawn tile equals a winning hand.
 	 */

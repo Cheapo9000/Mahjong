@@ -104,6 +104,15 @@ public:
     }
 
     /**
+     * @brief Inequality operator overloaded to ensure the comparison is handled correctly.
+     * @return A bool with the value true if the other tile isn't equal to this tile.
+     */
+    bool operator!=(const tile& other) const
+    {
+        return this->kind != other.kind || this->num != other.num;
+    }
+
+    /**
      * @brief Sets the suit representation of a tile.
      * @throw out_of_range exception if the kind is above or below the valid suits.
      */

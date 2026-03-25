@@ -1,5 +1,6 @@
 #include "table.h"
 #include <iostream>
+#include <algorithm>
 
 table::table() {
 	players = vector<player>(maxPlayers);
@@ -67,6 +68,10 @@ void table::discardDrawn() {
 
 void table::keepDrawn() {
 	vector<tile>* hand = players.at(currentPlayer).getHand();
+	// Reveal tiles making the set that came from the discard pile
+	if (drawnTile.isShown()) {
+		revealSet(hand);
+	}
 	hand->push_back(drawnTile);
 	sort(hand->begin(), hand->end());
 	drawnTile.reset();
@@ -193,8 +198,11 @@ bool table::canChi() const {
 		return false;
 	}
 
-	// TODO: Make the copy of the player hand only contain unique tiles
+	// TODO: If the lastTile is in the player hand. Remove it!
+	// Make the copy of the player hand only contain unique tiles
 	vector<tile> hand = players.at(currentPlayer).c_getHand();
+	vector<tile>::iterator iter = unique(hand.begin(), hand.end());
+	hand.erase(iter, hand.end());
 	tile curTile;
 	for (int i = 0; i < hand.size(); ++i) {
 		curTile = hand.at(i);
@@ -203,7 +211,7 @@ bool table::canChi() const {
 				if (i + 1 >= hand.size()) {
 					return false;
 				}
-				// CHeck if the lastTile is the start of a straight
+				// Check if the lastTile is the start of a straight
 				else if ((curTile.getSuit() == hand.at(i + 1).getSuit())
 					&& (curTile.getNumber() + 1 == hand.at(i + 1).getNumber())) {
 					return true;
@@ -213,7 +221,7 @@ bool table::canChi() const {
 				}
 			}
 			else if (lastTile.getNumber() == curTile.getNumber() + 1) {
-				if ((i + 2 >= hand.size()) || (i - 1 < 0)) {
+				if ((i + 1 >= hand.size()) || (i - 1 < 0)) {
 					return false;
 				}
 				// Check if the lastTile is the end of a straght
@@ -222,8 +230,8 @@ bool table::canChi() const {
 					return true;
 				}
 				// Check if the lastTle is the middle of a staight
-				else if ((lastTile.getSuit() == hand.at(i + 2).getSuit())
-					&& (lastTile.getNumber() + 1 == hand.at(i + 2).getNumber())) {
+				else if ((lastTile.getSuit() == hand.at(i + 1).getSuit())
+					&& (lastTile.getNumber() + 1 == hand.at(i + 1).getNumber())) {
 					return true;
 				}
 				else {
@@ -242,7 +250,85 @@ void table::chi() {
 	}
 
 	drawnTile = discardPile.at(discardPile.size() - 1);
+	drawnTile.setShown(true);
 	discardPile.pop_back();
+}
+
+void table::revealSet(vector<tile>* hand) {
+	// 0 = prevTile, 1 = nextTile, 2 = nextNextTile
+	int tileIndices[3] = {0, 0, 0};
+	tile prevTile;
+	tile curTile;
+	tile nextTile;
+	tile nextNextTile;
+	for (int i = 0; i < hand->size(); ++i) {
+		curTile = hand->at(i);
+		if (curTile.getSuit() == drawnTile.getSuit()) {
+			if (drawnTile.getNumber() + 1 == curTile.getNumber()) {
+				if (i + 1 >= hand->size()) {
+					return;
+				}
+				
+				for (int j = i; j + 1 < hand->size(); ++j) {
+					nextTile = hand->at(j + 1);
+					tileIndices[1] = j + 1;
+
+					if (curTile != nextTile && !nextTile.isShown()) {
+						break;
+					}
+				}
+				// Check if the drawnTile is the start of a straight
+				if ((curTile.getSuit() == nextTile.getSuit())
+					&& (curTile.getNumber() + 1 == nextTile.getNumber())) {
+					hand->at(i).setShown(true);
+					hand->at(tileIndices[1]).setShown(true);
+					return;
+				}
+				else {
+					return;
+				}
+			}
+			else if (drawnTile.getNumber() == curTile.getNumber() + 1) {
+				if ((i + 1 >= hand->size()) || (i - 1 < 0)) {
+					return;
+				}
+
+				for (int j = i; j - 1 >= 0; --j) {
+					prevTile = hand->at(j - 1);
+					tileIndices[0] = j - 1;
+
+					if (curTile != prevTile && !prevTile.isShown()) {
+						break;
+					}
+				}
+				for (int j = i; j + 1 < hand->size(); ++j) {
+					nextNextTile = hand->at(j + 1);
+					tileIndices[2] = j + 1;
+
+					if (curTile != nextNextTile && !nextNextTile.isShown()) {
+						break;
+					}
+				}
+				// Check if the drawnTile is the end of a straght
+				if ((curTile.getSuit() == prevTile.getSuit())
+					&& (curTile.getNumber() - 1 == prevTile.getNumber())) {
+					hand->at(i).setShown(true);
+					hand->at(tileIndices[0]).setShown(true);
+					return;
+				}
+				// Check if the drawnTile is the middle of a staight
+				else if ((drawnTile.getSuit() == nextNextTile.getSuit())
+					&& (drawnTile.getNumber() + 1 == nextNextTile.getNumber())) {
+					hand->at(i).setShown(true);
+					hand->at(tileIndices[2]).setShown(true);
+					return;
+				}
+				else {
+					return;
+				}
+			}
+		}
+	}
 }
 
 bool table::checkWin() const {
