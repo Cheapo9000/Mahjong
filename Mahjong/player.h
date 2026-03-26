@@ -92,7 +92,7 @@ public:
 	 * @brief Checks if the player has any shown tiles
 	 * @return A bool contianing true if there are any tiles shown.
 	 */
-	bool hasShownTiles();
+	bool hasShownTiles() const;
 };
 
 #endif

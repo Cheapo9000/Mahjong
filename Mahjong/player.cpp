@@ -47,6 +47,6 @@ vector<tile>* player::getHand() {
 	return &(this->hand);
 }
 
-bool player::hasShownTiles() {
+bool player::hasShownTiles() const {
 	return hasShown;
 }

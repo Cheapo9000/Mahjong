@@ -70,6 +70,7 @@ void table::keepDrawn() {
 	vector<tile>* hand = players.at(currentPlayer).getHand();
 	// Reveal tiles making the set that came from the discard pile
 	if (drawnTile.isShown()) {
+		players.at(currentPlayer).setShownTiles(true);
 		revealSet(hand);
 	}
 	hand->push_back(drawnTile);
@@ -91,6 +92,7 @@ bool table::discardTile(int index) {
 	try {
 		hand->at(index).setNumber(hand->back().getNumber());
 		hand->at(index).setSuit(hand->back().getSuit());
+		hand->at(index).setShown(hand->back().isShown());
 	}
 	catch (...) {
 		throw runtime_error("Could not set the number or suit on a tile.");
@@ -152,8 +154,25 @@ void table::welcomePlayers() const {
 }
 
 void table::displayTable(int seatPosition) const {
+	for (int i = 0; i < players.size(); ++i) {
+		if (i == seatPosition) {
+			continue;
+		}
+		if (players.at(i).hasShownTiles()) {
+			cout << players.at(i).getName() << "'s shown tiles:" << endl;
+			vector<tile> otherHand = players.at(i).c_getHand();
+			for (int j = 0; j < otherHand.size(); ++j) {
+				if (otherHand.at(j).isShown()) {
+					cout << "|" << otherHand.at(j).getDisplayValue();
+				}
+			}
+			cout << "|" << endl;
+		}
+	}
+
 	player player = players.at(seatPosition);
 	vector<tile> hand = player.c_getHand();
+	cout << endl << "Your tiles:" << endl;
 	for (int i = 0; i < hand.size(); ++i) {
 		if (i < 9) {
 			cout << "| " << i + 1;
@@ -198,11 +217,26 @@ bool table::canChi() const {
 		return false;
 	}
 
-	// TODO: If the lastTile is in the player hand. Remove it!
 	// Make the copy of the player hand only contain unique tiles
 	vector<tile> hand = players.at(currentPlayer).c_getHand();
 	vector<tile>::iterator iter = unique(hand.begin(), hand.end());
 	hand.erase(iter, hand.end());
+
+	// If the lastTile is in the player hand. Remove it.
+	iter = lower_bound(hand.begin(), hand.end(), lastTile);
+	if (iter != hand.end() && *iter == lastTile) {
+		int index = iter - hand.begin();
+		try {
+			hand.at(index).setNumber(hand.back().getNumber());
+			hand.at(index).setSuit(hand.back().getSuit());
+		}
+		catch (...) {
+			throw runtime_error("Could not set the number or suit on a tile.");
+		}
+		hand.pop_back();
+		sort(hand.begin(), hand.end());
+	}
+
 	tile curTile;
 	for (int i = 0; i < hand.size(); ++i) {
 		curTile = hand.at(i);
@@ -289,9 +323,8 @@ void table::revealSet(vector<tile>* hand) {
 				}
 			}
 			else if (drawnTile.getNumber() == curTile.getNumber() + 1) {
-				if ((i + 1 >= hand->size()) || (i - 1 < 0)) {
-					return;
-				}
+				bool atStart = i - 1 < 0;
+				bool atEnd = i + 1 >= hand->size();
 
 				for (int j = i; j - 1 >= 0; --j) {
 					prevTile = hand->at(j - 1);
@@ -310,14 +343,14 @@ void table::revealSet(vector<tile>* hand) {
 					}
 				}
 				// Check if the drawnTile is the end of a straght
-				if ((curTile.getSuit() == prevTile.getSuit())
+				if ((curTile.getSuit() == prevTile.getSuit() && !atStart)
 					&& (curTile.getNumber() - 1 == prevTile.getNumber())) {
 					hand->at(i).setShown(true);
 					hand->at(tileIndices[0]).setShown(true);
 					return;
 				}
 				// Check if the drawnTile is the middle of a staight
-				else if ((drawnTile.getSuit() == nextNextTile.getSuit())
+				else if ((drawnTile.getSuit() == nextNextTile.getSuit() && !atEnd)
 					&& (drawnTile.getNumber() + 1 == nextNextTile.getNumber())) {
 					hand->at(i).setShown(true);
 					hand->at(tileIndices[2]).setShown(true);

@@ -88,6 +88,9 @@ public:
      */
     bool operator<(const tile& other) const
     {
+        if (this->isShown() != other.isShown())
+            return !this->isShown();
+
         if (this->kind != other.kind)
             return this->kind < other.kind;
 

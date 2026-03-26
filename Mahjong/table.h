@@ -109,6 +109,7 @@ public:
 	/**
 	 * @brief Checks if the current player can Chi the tile in the discard pile.
 	 * @return A bool value containing true if the player can retrieve the tile from the discard pile.
+	 * @throw runtime_error if a tile number and/or suit cannot be set
 	 */
 	bool canChi() const;
 
