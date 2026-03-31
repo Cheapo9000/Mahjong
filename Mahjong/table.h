@@ -1,5 +1,7 @@
 /**
  * @file table.h
+ * @author Tim Lake
+ * @copyright 2026
  * @brief Represents a Mahjong table with players, a discard pile, a deck of tiles, a drawn tile, and the current player.
  *
  * Provides methods for setting, getting, and displaying each value.
@@ -117,6 +119,24 @@ public:
 	 * @brief Places the last tile in the discard pile into the drawn tile
 	 */
 	void chi();
+
+	/**
+	 * @brief Checks if the player in seatPosition can Peng or Gong the tile in the discard pile.
+	 * @return An inter value containing 0 if the player can Peng or Gong, 1 if the player can Peng, or 2 if the player can Gong the tile from the discard pile.
+	 * @throw out_of_range can occur if seatPosition is beyond player indices.
+	 */
+	int canPengOrGong(int seatPosition) const;
+
+	/**
+	 * @brief Checks if any player except the previous player can Peng or Gong the tile in the discard pile.
+	 * @return An inter value containing 0 if nobody can Peng or Gong, 1 if at least one player can Peng, or 2 if at least one player can Gong the tile from the discard pile.
+	 * @throw out_of_range can occur if seatPosition is beyond player indices.
+	 */
+	int canPengOrGong() const;
+
+	void peng(int seatPosition);
+
+	void gong(int seatPosition);
 
 	/**
 	 * @brief Reveals the other two tiles in the consecutive set that the drawn tile completes.

@@ -1,5 +1,7 @@
 /**
  * @file deck.h
+ * @author Tim Lake
+ * @copyright 2026
  * @brief Represents a Mahjong deck with tiles, maximum tiles in the deck, and the size of a starting hand.
  *
  * Provides methods for setting and getting each value as well as drawing a single tile at random.

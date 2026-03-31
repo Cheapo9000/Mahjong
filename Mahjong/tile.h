@@ -1,5 +1,7 @@
 /**
  * @file tile.h
+ * @author Tim Lake
+ * @copyright 2026
  * @brief Represents a Mahjong tile with suit and number.
  *
  * Provides methods for setting, getting, and displaying tile values.

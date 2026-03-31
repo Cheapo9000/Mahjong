@@ -1,3 +1,8 @@
+/**
+ * @file player.cpp
+ * @author Tim Lake
+ * @copyright 2026
+ */
 #include "player.h"
 
 player::player() {

@@ -1,3 +1,9 @@
+/**
+ * @file table.cpp
+ * @author Tim Lake
+ * @copyright 2026
+ */
+
 #include "table.h"
 #include <iostream>
 #include <algorithm>
@@ -286,6 +292,105 @@ void table::chi() {
 	drawnTile = discardPile.at(discardPile.size() - 1);
 	drawnTile.setShown(true);
 	discardPile.pop_back();
+}
+
+int table::canPengOrGong(int seatPosition) const {
+	if (discardPile.size() < 1) {
+		return 0;
+	}
+
+	if (seatPosition < 0 || seatPosition >= players.size()) {
+		throw out_of_range("Index out of range");
+	}
+
+	int countPlayers = 0;
+	for (int i = 0; i < players.size(); ++i) {
+		if (!players.at(i).getName().empty()) {
+			++countPlayers;
+		}
+	}
+
+	int prevPlayer = (currentPlayer + countPlayers - 1) % countPlayers;
+
+	// Previous player or players not seated can't Peng or Gong
+	if (seatPosition > countPlayers || prevPlayer == seatPosition) {
+		return 0;
+	}
+
+	vector<tile> hand = players.at(seatPosition).c_getHand();
+	tile lastTile = discardPile.at(discardPile.size() - 1);
+	tile curTile;
+	tile nextTile;
+	tile nextNextTile;
+	for (int i = 0; i < hand.size(); ++i) {
+		curTile = hand.at(i);
+		if (curTile.isShown()) {
+			continue;
+		}
+
+		if (curTile.getSuit() == lastTile.getSuit()) {
+			if (curTile.getNumber() == lastTile.getNumber()) {
+				if (i + 1 < hand.size()) {
+					nextTile = hand.at(i + 1);
+					if (curTile.getSuit() == nextTile.getSuit() 
+						&& !nextTile.isShown()) {
+						if (curTile.getNumber() == nextTile.getNumber()) {
+							// There's at least a pair so we can Peng
+							if (i + 2 < hand.size()) {
+								nextNextTile = hand.at(i + 2);
+								if (curTile.getSuit() == nextNextTile.getSuit()) {
+									if (curTile.getNumber() == nextNextTile.getNumber()) {
+										return 2;
+									}
+								}
+								else {
+									return 1;
+								}
+							}
+							else {
+								return 1;
+							}
+						}
+						else {
+							return 0;
+						}
+					}
+					else {
+						return 0;
+					}
+				}
+				else {
+					return 0;
+				}
+			}
+		}
+	}
+
+	return 0;
+}
+
+int table::canPengOrGong() const {
+	int results;
+	int highest = 0;
+	for (int i = 0; i < players.size(); ++i) {
+		results = canPengOrGong(i);
+		if (results > highest) {
+			highest = results;
+		}
+		if (highest >= 2) {
+			break;
+		}
+	}
+
+	return highest;
+}
+
+void table::peng(int seatPosition) {
+
+}
+
+void table::gong(int seatPosition) {
+
 }
 
 void table::revealSet(vector<tile>* hand) {

@@ -1,5 +1,7 @@
 /**
  * @file player.h
+ * @author Tim Lake
+ * @copyright 2026
  * @brief Represents a Mahjong player with name, seat position, and hand of tiles.
  *
  * Provides methods for setting and getting each value.

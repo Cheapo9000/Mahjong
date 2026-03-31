@@ -1,3 +1,8 @@
+/**
+ * @file deck.cpp
+ * @author Tim Lake
+ * @copyright 2026
+ */
 #include "deck.h"
 
 void deck::build() {

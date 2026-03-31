@@ -1,5 +1,8 @@
 /**
+ * @name Mahjong
  * @file mahjong.cpp
+ * @author Tim Lake
+ * @copyright 2026
  * @brief A local console based mahjong game.
  *
  * A console based mahjong game with up to 4 players. Players must have integrity to not scroll up when playing and must switch to the next player in the 5 second interval. Other players should not be looking at the screen when it is a differnt player's turn.
@@ -74,11 +77,19 @@ int main()
     regex yesPattern("y", regex_constants::icase);
     regex noPattern("n", regex_constants::icase);
     bool hasKept;
+    int pengOrGong;
 
     // Main game loop continues until players run out of tiles.
     while (board.getDeck()->getTiles()->size() > 0) {
         curPlayer = board.getCurrentPlayer();
         hasKept = false;
+
+        pengOrGong = board.canPengOrGong();
+        cout << "Discard pile: " << endl;
+        board.displayDiscardPile();
+
+        cout << "\033[2J\033[1;1H"; // clear the screen
+
         try {
             playerName = board.getPlayer(curPlayer)->getName();
             cout << playerName << ", it's your turn!" << endl;
