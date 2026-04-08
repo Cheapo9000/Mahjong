@@ -7,8 +7,6 @@
  *
  * A console based mahjong game with up to 4 players. Players must have integrity to not scroll up when playing and must switch to the next player in the 5 second interval. Other players should not be looking at the screen when it is a differnt player's turn.
  * COMING UPDATES:
- * Win states
- * PENG and GONG screen (includes peeking at your hand option)
  * Network play
  */
 #include <iostream>
@@ -76,6 +74,8 @@ int main()
     regex discardPattern("d", regex_constants::icase);
     regex yesPattern("y", regex_constants::icase);
     regex noPattern("n", regex_constants::icase);
+    regex pengPattern("p", regex_constants::icase);
+    regex gongPattern("g", regex_constants::icase);
     bool hasKept;
     int pengOrGong;
 
@@ -84,11 +84,130 @@ int main()
         curPlayer = board.getCurrentPlayer();
         hasKept = false;
 
-        pengOrGong = board.canPengOrGong();
-        cout << "Discard pile: " << endl;
-        board.displayDiscardPile();
+        if (board.hasDiscardedTiles()) {
+            pengOrGong = board.canPengOrGong();
+            board.displayTable();
+            cout << "Discard pile: " << endl;
+            board.displayDiscardPile();
 
-        cout << "\033[2J\033[1;1H"; // clear the screen
+            cout << "Would any players like to Peng or Gong the last tile? (Peng means the tile will complete a set of 3 and Gong will complete a set of 4.)" << endl;
+            board.displayPengOrGongPlayers();
+            cout << "[3] Clear screen" << endl;
+            cout << "[4] Peek at hand" << endl;
+            cout << "[5] Exit Menu" << endl;
+            do {
+                getline(cin, input);
+
+                if (isNumber(input)) {
+                    if (input == "5") {
+                        cout << "\033[2J\033[1;1H"; // clear the screen
+                        break;
+                    }
+                    else if (input == "3") {
+                        cout << "\033[2J\033[1;1H"; // clear the screen
+                        board.displayTable();
+                        cout << "Discard pile: " << endl;
+                        board.displayDiscardPile();
+
+                        cout << "Would any players like to Peng or Gong the last tile? (Peng means the tile will complete a set of 3 and Gong will complete a set of 4.)" << endl;
+                        board.displayPengOrGongPlayers();
+                        cout << "[3] Clear screen" << endl;
+                        cout << "[4] Peek at hand" << endl;
+                        cout << "[5] Exit Menu" << endl;
+                    }
+                    // Take a peek at your hand, but the code doesn't know which player's hand to show so show some options!
+                    else if (input == "4") {
+                        cout << "\033[2J\033[1;1H"; // clear the screen
+                        board.displayPengOrGongPlayers();
+                        cout << "[4] Exit Peek Menu" << endl;
+
+                        do {
+                            getline(cin, input);
+
+                            if (isNumber(input)) {
+                                if (input == "4") {
+                                    cout << "\033[2J\033[1;1H"; // clear the screen
+                                    board.displayTable();
+                                    cout << "Discard pile: " << endl;
+                                    board.displayDiscardPile();
+
+                                    cout << "Would any players like to Peng or Gong the last tile? (Peng means the tile will complete a set of 3 and Gong will complete a set of 4.)" << endl;
+                                    board.displayPengOrGongPlayers();
+                                    cout << "[3] Clear screen" << endl;
+                                    cout << "[4] Peek at hand" << endl;
+                                    cout << "[5] Exit Menu" << endl;
+                                    break;
+                                }
+                                else {
+                                    board.displayTable(stoi(input));
+                                    cout << "Input 4 and press ENTER to exit when you are done looking at your hand." << endl;
+                                }
+                            }
+                            else {
+                                cout << "Must input only a valid whole number!" << endl;
+                            }
+                        } while (true);
+                    }
+                    else {
+                        // Attempt to peng or gong for the chosen player
+                        int pengOrGong = 0;
+                        try {
+                            pengOrGong = board.pengOrGong(stoi(input));
+                        }
+                        catch (...) {
+                            // Do nothing because this invalid input shouldn't crash the game.
+                            cout << "Must be a valid seat position!" << endl;
+                        }
+                        // Peng
+                        if (pengOrGong == 1) {
+                            cout << "\033[2J\033[1;1H"; // clear the screen
+                            cout << "Peng!" << endl;
+                            board.setCurrentPlayer(stoi(input), true);
+                            hasKept = true;
+                        }
+                        // Gong
+                        else if (pengOrGong == 2) {
+                            bool wantsPeng = false;
+                            cout << "Do you want to Peng or Gong? Input P to Peng or G to Gong and press ENTER:" << endl;
+                            do {
+                                getline(cin, input);
+
+                                if (regex_search(input, pengPattern)) {
+                                    wantsPeng = true;
+                                    board.setCurrentPlayer(stoi(input), true);
+                                    board.setWantsPeng(curPlayer);
+                                    hasKept = true;
+                                    break;
+                                }
+                                else if (regex_search(input, gongPattern)) {
+                                    wantsPeng = false;
+                                    board.setCurrentPlayer(stoi(input), true);
+                                    hasKept = true;
+                                    break;
+                                }
+                                else {
+                                    cout << "Invalid input! You must input a P to Peng or G to Gong and press ENTER." << endl;
+                                }
+                            } while (true);
+
+                            cout << "\033[2J\033[1;1H"; // clear the screen
+                            if (wantsPeng) {
+                                cout << "Peng!" << endl;
+                            }
+                            else {
+                                cout << "Gong!" << endl;
+                            }
+                        }
+                        else {
+                            cout << "You cannot peng or gong!" << endl;
+                        }
+                    }
+                }
+                else {
+                    cout << "Must input only a valid whole number!" << endl;
+                }
+            } while (true);
+        }
 
         try {
             playerName = board.getPlayer(curPlayer)->getName();
@@ -101,34 +220,36 @@ int main()
         cout << "Discard pile: " << endl;
         board.displayDiscardPile();
 
-        if (board.canChi()) {
-            board.displayTable(curPlayer);
+        if (!hasKept) {
+            if (board.canChi()) {
+                board.displayTable(curPlayer);
 
-            do {
-                cout << "Would you like to Chi? Input Y as yes and N as no and press ENTER to submit your choice." << endl;
-                getline(cin, input);
+                do {
+                    cout << "Would you like to Chi? Input Y as yes and N as no and press ENTER to submit your choice." << endl;
+                    getline(cin, input);
 
-                if (regex_search(input, yesPattern)) {
-                    board.chi();
-                    hasKept = true;
+                    if (regex_search(input, yesPattern)) {
+                        board.chi();
+                        hasKept = true;
 
-                    cout << "Discard pile: " << endl;
-                    board.displayDiscardPile();
-                    break;
-                }
-                else if (regex_search(input, noPattern)) {
-                    board.drawTile();
-                    cout << "Drawing tile: " << board.getDrawnTile().getDisplayValue() << endl;
-                    break;
-                }
-                else{
-                    cout << "Invalid input provided." << endl;
-                }
-            } while (true);
-        }
-        else {
-            board.drawTile();
-            cout << "Drawing tile: " << board.getDrawnTile().getDisplayValue() << endl;
+                        cout << "Discard pile: " << endl;
+                        board.displayDiscardPile();
+                        break;
+                    }
+                    else if (regex_search(input, noPattern)) {
+                        board.drawTile();
+                        cout << "Drawing tile: " << board.getDrawnTile().getDisplayValue() << endl;
+                        break;
+                    }
+                    else {
+                        cout << "Invalid input provided." << endl;
+                    }
+                } while (true);
+            }
+            else {
+                board.drawTile();
+                cout << "Drawing tile: " << board.getDrawnTile().getDisplayValue() << endl;
+            }
         }
 
         board.displayTable(curPlayer);
@@ -182,7 +303,7 @@ int main()
                             board.displayTable(curPlayer);
                             cout << "Press ENTER to end your turn." << endl;
                             getline(cin, input);
-                            // TODO: Add a PENG and GONG option screen
+                            
                             cout << "Changing to next player in 5 seconds." << endl;
                             countFiveSeconds();
                             cout << "\033[2J\033[1;1H"; // clear the screen
@@ -201,7 +322,7 @@ int main()
                 board.displayTable(curPlayer);
                 cout << "Press ENTER to end your turn." << endl;
                 getline(cin, input);
-                // TODO: Add a PENG and GONG option screen
+                
                 cout << "Changing to next player in 5 seconds." << endl;
                 countFiveSeconds();
                 cout << "\033[2J\033[1;1H"; // clear the screen

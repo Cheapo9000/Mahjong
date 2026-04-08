@@ -27,7 +27,10 @@ class table {
 	vector<tile> discardPile;
 	deck walls;
 	tile drawnTile;
+	int previousPlayer;
 	int currentPlayer;
+	int playerCount;
+	mutable vector<pair<int, bool>> wantsPengOrGong;
 
 public:
 	/**
@@ -83,15 +86,21 @@ public:
 	bool discardTile(int index);
 
 	/**
-	 * @brief Sets the current player.
+	 * @brief Sets the current player. If overwritePrev is set to true then the previous player will be marked as the one that came in order before the provided seat regardless of what the actual previous player was. Also resets wantsPengOrGong values to zeroes and false.
 	 * @throw out_of_range exception if the seat is above or below the indices of players.
 	 */
-	void setCurrentPlayer(int seat);
+	void setCurrentPlayer(int seat, bool overwritePrev = false);
 
 	/**
-	 * @brief Sets the current player to the next player.
+	 * @brief Sets the current player to the next player.  Also resets wantsPengOrGong values to zeroes and false.
 	 */
 	void nextPlayer();
+
+	/**
+	 * @brief Sets the player in the given seat as wants to Peng
+	 * @throw out_of_range exception if the seat is above or below the indices of players.
+	 */
+	void setWantsPeng(int seat);
 
 	/**
 	 * @brief Displays a welcome message addressing each player with a name.
@@ -99,9 +108,10 @@ public:
 	void welcomePlayers() const;
 
 	/**
-	 * @brief Shows the table from the point of view of the provided seat position.
+	 * @brief Shows the table from the point of view of the provided seat position. A negative one will show the table from the perspective of someone without a hand.
+	 * @throw out_of_range exception if the seat is above or below the indices of players.
 	 */
-	void displayTable(int seatPosition) const;
+	void displayTable(int seatPosition = -1) const;
 
 	/**
 	 * @brief Shows the discard pile contents.
@@ -122,21 +132,29 @@ public:
 
 	/**
 	 * @brief Checks if the player in seatPosition can Peng or Gong the tile in the discard pile.
-	 * @return An inter value containing 0 if the player can Peng or Gong, 1 if the player can Peng, or 2 if the player can Gong the tile from the discard pile.
+	 * @return An integer value containing 0 if the player can Peng or Gong, 1 if the player can Peng, or 2 if the player can Gong the tile from the discard pile.
 	 * @throw out_of_range can occur if seatPosition is beyond player indices.
 	 */
 	int canPengOrGong(int seatPosition) const;
 
 	/**
 	 * @brief Checks if any player except the previous player can Peng or Gong the tile in the discard pile.
-	 * @return An inter value containing 0 if nobody can Peng or Gong, 1 if at least one player can Peng, or 2 if at least one player can Gong the tile from the discard pile.
+	 * @return An integer value containing 0 if nobody can Peng or Gong, 1 if at least one player can Peng, or 2 if at least one player can Gong the tile from the discard pile.
 	 * @throw out_of_range can occur if seatPosition is beyond player indices.
 	 */
 	int canPengOrGong() const;
 
-	void peng(int seatPosition);
+	/**
+	 * @brief Attempts to peng or gong for the player at the given seat position.
+	 * @return An integer value containing 0 if the player couldn't peng or gong, 1 if the player was able to Peng, or 2 if the player was able to Gong the tile from the discard pile.
+	 * @throw out_of_range can occur if seatPosition is beyond player indices.
+	 */
+	int pengOrGong(int seatPosition);
 
-	void gong(int seatPosition);
+	/**
+	 * @brief Shows the players that can currently peng or gong and their seat position
+	 */
+	void displayPengOrGongPlayers() const;
 
 	/**
 	 * @brief Reveals the other two tiles in the consecutive set that the drawn tile completes.
@@ -168,6 +186,12 @@ public:
 	 * @throw out_of_range exception if the seat position is above or below the indices of players.
 	 */
 	vector<tile>* getPlayerHand(int seatPosition);
+
+	/**
+	 * @brief Checks if the discard pile has tiles in it.
+	 * @return A bool containing true if there are tiles n the discard pile, otherwise false.
+	 */
+	bool hasDiscardedTiles() const;
 
 	/**
 	 * @brief Gets the deck.

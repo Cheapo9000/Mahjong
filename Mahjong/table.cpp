@@ -7,17 +7,23 @@
 #include "table.h"
 #include <iostream>
 #include <algorithm>
+#include <utility>
 
 table::table() {
 	players = vector<player>(maxPlayers);
 	discardPile = vector<tile>();
 	currentPlayer = 0;
+	previousPlayer = currentPlayer;
+	playerCount = 0;
+	wantsPengOrGong = vector<pair<int, bool>>(maxPlayers);
 }
 
 int table::seatPlayer(string name) {
 	for (int i = 0; i < players.size(); ++i) {
 		if (players.at(i).getName().empty()) {
 			players.at(i).setName(name);
+			players.at(i).setSeatPos(i);
+			++playerCount;
 			return i;
 		}
 	}
@@ -31,6 +37,7 @@ void table::removePlayer(int seatPosition) {
 	}
 
 	players.at(seatPosition).reset();
+	--playerCount;
 }
 
 void table::dealHand(int seatPosition) {
@@ -109,19 +116,44 @@ bool table::discardTile(int index) {
 	return true;
 }
 
-void table::setCurrentPlayer(int seat) {
+void table::setCurrentPlayer(int seat, bool overwritePrev) {
 	if (seat < 0 || seat >= players.size()) {
 		throw out_of_range("Index out of range");
 	}
 
+	for (int i = 0; i < wantsPengOrGong.size(); ++i) {
+		wantsPengOrGong.at(i).first = 0;
+		wantsPengOrGong.at(i).second = false;
+	}
+
+	if (overwritePrev) {
+		previousPlayer = seat - 1;
+		if (previousPlayer < 0) {
+			for (int i = players.size() - 1; i >= 0; --i) {
+				if (!players.at(i).getName().empty()) {
+					previousPlayer = i;
+					break;
+				}
+			}
+		}
+	}
+	else {
+		previousPlayer = currentPlayer;
+	}
 	currentPlayer = seat;
 }
 
 void table::nextPlayer() {
+	for (int i = 0; i < wantsPengOrGong.size(); ++i) {
+		wantsPengOrGong.at(i).first = 0;
+		wantsPengOrGong.at(i).second = false;
+	}
+
 	// Find the next player that is sat at the table.
 	// This allows for gaps in the seating arrangement and allows for
 	// two players to sit across the table.
 	// This code assumes that if you have a name then you have a seat as well.
+	previousPlayer = currentPlayer;
 	for (int i = 0; i < players.size(); ++i) {
 		// This number is in base 1.
 		currentPlayer = (currentPlayer + 1) % players.size();
@@ -129,6 +161,15 @@ void table::nextPlayer() {
 			return;
 		}
 	}
+}
+
+void table::setWantsPeng(int seat) {
+	if (seat < 0 || seat >= players.size()) {
+		throw out_of_range("Index out of range");
+	}
+
+	wantsPengOrGong.at(seat).first = 1;
+	wantsPengOrGong.at(seat).second = true;
 }
 
 void table::welcomePlayers() const {
@@ -160,6 +201,10 @@ void table::welcomePlayers() const {
 }
 
 void table::displayTable(int seatPosition) const {
+	if ((seatPosition < -1) || seatPosition >= (int)players.size()) {
+		throw out_of_range("Index out of range");
+	}
+
 	for (int i = 0; i < players.size(); ++i) {
 		if (i == seatPosition) {
 			continue;
@@ -176,31 +221,33 @@ void table::displayTable(int seatPosition) const {
 		}
 	}
 
-	player player = players.at(seatPosition);
-	vector<tile> hand = player.c_getHand();
-	cout << endl << "Your tiles:" << endl;
-	for (int i = 0; i < hand.size(); ++i) {
-		if (i < 9) {
-			cout << "| " << i + 1;
+	if (seatPosition >= 0) {
+		player player = players.at(seatPosition);
+		vector<tile> hand = player.c_getHand();
+		cout << endl << "Your tiles:" << endl;
+		for (int i = 0; i < hand.size(); ++i) {
+			if (i < 9) {
+				cout << "| " << i + 1;
+			}
+			else {
+				cout << "|" << i + 1;
+			}
 		}
-		else {
-			cout << "|" << i + 1;
+		cout << "|" << endl;
+		for (int i = 0; i < hand.size(); ++i) {
+			cout << "|" << hand.at(i).getDisplayValue();
 		}
+		cout << "|" << endl;
+		for (int i = 0; i < hand.size(); ++i) {
+			if (hand.at(i).isShown()) {
+				cout << "|**";
+			}
+			else {
+				cout << "|  ";
+			}
+		}
+		cout << "|" << endl << endl;
 	}
-	cout << "|" << endl;
-	for (int i = 0; i < hand.size(); ++i) {
-		cout << "|" << hand.at(i).getDisplayValue();
-	}
-	cout << "|" << endl;
-	for (int i = 0; i < hand.size(); ++i) {
-		if (hand.at(i).isShown()) {
-			cout << "|**";
-		}
-		else {
-			cout << "|  ";
-		}
-	}
-	cout << "|" << endl << endl;
 }
 
 void table::displayDiscardPile() const {
@@ -214,7 +261,7 @@ void table::displayDiscardPile() const {
 }
 
 bool table::canChi() const {
-	if (discardPile.size() < 1) {
+	if (!hasDiscardedTiles()) {
 		return false;
 	}
 
@@ -295,7 +342,7 @@ void table::chi() {
 }
 
 int table::canPengOrGong(int seatPosition) const {
-	if (discardPile.size() < 1) {
+	if (!hasDiscardedTiles()) {
 		return 0;
 	}
 
@@ -303,17 +350,8 @@ int table::canPengOrGong(int seatPosition) const {
 		throw out_of_range("Index out of range");
 	}
 
-	int countPlayers = 0;
-	for (int i = 0; i < players.size(); ++i) {
-		if (!players.at(i).getName().empty()) {
-			++countPlayers;
-		}
-	}
-
-	int prevPlayer = (currentPlayer + countPlayers - 1) % countPlayers;
-
 	// Previous player or players not seated can't Peng or Gong
-	if (seatPosition > countPlayers || prevPlayer == seatPosition) {
+	if (seatPosition > playerCount || previousPlayer == seatPosition) {
 		return 0;
 	}
 
@@ -340,38 +378,57 @@ int table::canPengOrGong(int seatPosition) const {
 								nextNextTile = hand.at(i + 2);
 								if (curTile.getSuit() == nextNextTile.getSuit()) {
 									if (curTile.getNumber() == nextNextTile.getNumber()) {
+										wantsPengOrGong.at(seatPosition).first = 2;
+										wantsPengOrGong.at(seatPosition).second = true;
 										return 2;
 									}
 								}
 								else {
+									wantsPengOrGong.at(seatPosition).first = 1;
+									wantsPengOrGong.at(seatPosition).second = true;
 									return 1;
 								}
 							}
 							else {
+								wantsPengOrGong.at(seatPosition).first = 1;
+								wantsPengOrGong.at(seatPosition).second = true;
 								return 1;
 							}
 						}
 						else {
+							wantsPengOrGong.at(seatPosition).first = 0;
+							wantsPengOrGong.at(seatPosition).second = false;
 							return 0;
 						}
 					}
 					else {
+						wantsPengOrGong.at(seatPosition).first = 0;
+						wantsPengOrGong.at(seatPosition).second = false;
 						return 0;
 					}
 				}
 				else {
+					wantsPengOrGong.at(seatPosition).first = 0;
+					wantsPengOrGong.at(seatPosition).second = false;
 					return 0;
 				}
 			}
 		}
 	}
 
+	wantsPengOrGong.at(seatPosition).first = 0;
+	wantsPengOrGong.at(seatPosition).second = false;
 	return 0;
 }
 
 int table::canPengOrGong() const {
 	int results;
 	int highest = 0;
+
+	if (!hasDiscardedTiles()) {
+		return 0;
+	}
+
 	for (int i = 0; i < players.size(); ++i) {
 		results = canPengOrGong(i);
 		if (results > highest) {
@@ -385,12 +442,36 @@ int table::canPengOrGong() const {
 	return highest;
 }
 
-void table::peng(int seatPosition) {
+int table::pengOrGong(int seatPosition) {
+	if (seatPosition < 0 || seatPosition >= players.size()) {
+		throw out_of_range("Index out of range");
+	}
 
+	int pengOrGong = canPengOrGong(seatPosition);
+	if (pengOrGong != 1 && pengOrGong != 2) {
+		return pengOrGong;
+	}
+
+	drawnTile = discardPile.at(discardPile.size() - 1);
+	drawnTile.setShown(true);
+	discardPile.pop_back();
+
+	return pengOrGong;
 }
 
-void table::gong(int seatPosition) {
+void table::displayPengOrGongPlayers() const {
+	if (players.size() < 1) {
+		return;
+	}
 
+	cout << "Select player by [seat position]:" << endl;
+	player displayPlayer;
+	for (int i = 0; i < players.size(); ++i) {
+		displayPlayer = players.at(i);
+		if (i != previousPlayer && !displayPlayer.getName().empty()) {
+			cout << "[" << displayPlayer.getSeatPos() << "] " << displayPlayer.getName() << endl;
+		}
+	}
 }
 
 void table::revealSet(vector<tile>* hand) {
@@ -754,6 +835,10 @@ vector<tile>* table::getPlayerHand(int seatPosition) {
 	}
 
 	return players.at(seatPosition).getHand();
+}
+
+bool table::hasDiscardedTiles() const {
+	return discardPile.size() > 0;
 }
 
 deck* table::getDeck() {
