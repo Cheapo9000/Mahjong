@@ -176,7 +176,7 @@ void table::welcomePlayers() const {
 	int count = 0;
 	string name = "";
 	cout << "Welcome ";
-	for (int i = 0; i < players.size() - 1; ++i) {
+	for (int i = 0; i < players.size(); ++i) {
 		name = players.at(i).getName();
 		if (!name.empty()) {
 			++count;

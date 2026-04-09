@@ -164,6 +164,7 @@ int main()
                             cout << "Peng!" << endl;
                             board.setCurrentPlayer(stoi(input), true);
                             hasKept = true;
+                            break;
                         }
                         // Gong
                         else if (pengOrGong == 2) {
