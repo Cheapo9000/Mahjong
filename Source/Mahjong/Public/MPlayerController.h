@@ -26,11 +26,17 @@ public:
 	UFUNCTION(Server, Reliable)
 	void Server_RequestNameChange(const FString& NewName);
 
+	UFUNCTION(Server, Reliable)
+	void Server_RequestSeatChange(const int32& NewSeat);
+
 	UFUNCTION()
 	void resetTile(FTile& tile);
 
 	UFUNCTION()
 	void HandlePlayerNameChanged(const FString& NewName);
+
+	UFUNCTION()
+	void HandlePlayerSeatChanged(const int32& NewSeat);
 
 protected:
 	void OnRep_PlayerState();

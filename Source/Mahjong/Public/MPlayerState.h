@@ -52,6 +52,9 @@ public:
 	//UFUNCTION()
 	void HandleNameChanged();
 
+	//UFUNCTION()
+	void HandleSeatPositionChanged();
+
 protected:
 
 	UFUNCTION(Server, Reliable)
@@ -74,9 +77,6 @@ protected:
 
 	UFUNCTION()
 	void OnRep_Hand();
-
-	UFUNCTION()
-	void HandleSeatPositionChanged();
 
 	UFUNCTION()
 	void HandleHandChanged();

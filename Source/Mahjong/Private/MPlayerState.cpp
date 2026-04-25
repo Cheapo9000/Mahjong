@@ -86,6 +86,11 @@ void AMPlayerState::HandleNameChanged()
     // Update UI
 }
 
+void AMPlayerState::HandleSeatPositionChanged()
+{
+    // Update UI
+}
+
 void AMPlayerState::Server_SetPlayerName_Implementation(const FString& NewName)
 {
     SetPlayerName(Name);
@@ -125,11 +130,6 @@ void AMPlayerState::OnRep_Hand()
     UE_LOG(LogTemp, Warning, TEXT("OnRep_Hand called!"));
     // Called on clients when PlayerName updates
     //OnPlayerHandChanged.Broadcast(PrivateHand);
-}
-
-void AMPlayerState::HandleSeatPositionChanged()
-{
-    // Update UI
 }
 
 void AMPlayerState::HandleHandChanged()
