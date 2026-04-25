@@ -10,6 +10,9 @@
 #include "Tile.h"
 #include "MPlayerState.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPlayerNameChanged, const FString&, NewName);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPlayerSeatPositionChanged, const int32&, NewSeat);
+
 /**
  * 
  */
@@ -18,11 +21,65 @@ class MAHJONG_API AMPlayerState : public APlayerState
 {
 	GENERATED_BODY()
 	
-	UPROPERTY(Replicated)
-	TArray<FTile> PrivateHand;
+public:
+
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_Name)
+	FString Name;
+
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_SeatPosition)
+	int32 Seat;
+
+	UPROPERTY(ReplicatedUsing = OnRep_Hand)
+	FTileArray PrivateHand;
 
 	UPROPERTY(Replicated)
-	TArray<FTile> PublicTiles;
+	FTileArray PublicTiles;
+
+	UPROPERTY(BlueprintAssignable)
+	FOnPlayerNameChanged OnPlayerNameChanged;
+
+	UPROPERTY(BlueprintAssignable)
+	FOnPlayerSeatPositionChanged OnPlayerSeatPositionChanged;
+
+	void SetPlayerName(const FString& NewName);
+
+	void SetPlayerSeatPosition(const int32& seatPosition);
+
+	void SetPlayerHand(const TArray<FTile>& Hand);
+
+	void Reset();
+
+	//UFUNCTION()
+	void HandleNameChanged();
+
+protected:
+
+	UFUNCTION(Server, Reliable)
+	void Server_SetPlayerName(const FString& NewName);
+
+	UFUNCTION(Server, Reliable)
+	void Server_SetPlayerSeatPosition(const int32& NewSeat);
+
+	UFUNCTION(Server, Reliable)
+	void Server_SetPlayerHand(const TArray<FTile>& Hand);
+
+	UFUNCTION(Server, Reliable)
+	void Server_Reset();
+
+	UFUNCTION()
+	void OnRep_Name();
+
+	UFUNCTION()
+	void OnRep_SeatPosition();
+
+	UFUNCTION()
+	void OnRep_Hand();
+
+	UFUNCTION()
+	void HandleSeatPositionChanged();
+
+	UFUNCTION()
+	void HandleHandChanged();
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 };
