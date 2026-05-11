@@ -9,9 +9,9 @@
 #include "CoreMinimal.h"
 #include "Tile.generated.h"
 
-DECLARE_MULTICAST_DELEGATE_TwoParams(FOnTileAdded, int32, const FTile&);
-DECLARE_MULTICAST_DELEGATE_OneParam(FOnTileRemoved, int32);
-DECLARE_MULTICAST_DELEGATE_TwoParams(FOnTileChanged, int32, const FTile&);
+DECLARE_MULTICAST_DELEGATE_TwoParams(FOnTileAdded, const int32&, const FTile&);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnTileRemoved, const int32&);
+DECLARE_MULTICAST_DELEGATE_TwoParams(FOnTileChanged, const int32&, const FTile&);
 
 UENUM(BlueprintType)
 enum class ESuit : uint8
@@ -29,23 +29,44 @@ struct FTile
 {
     GENERATED_BODY()
 
-    UPROPERTY()
+public:
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    int32 Id;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
     ESuit Suit;
 
-    UPROPERTY()
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
     int32 Number;
+
+    FTile()
+    {
+        Suit = ESuit::None;
+        Number = 0;
+    }
+
+    bool operator==(const FTile& Other) const
+    {
+        return Suit == Other.Suit && Number == Other.Number;
+    }
+
+    bool operator!=(const FTile& Other) const
+    {
+        return Suit != Other.Suit || Number != Other.Number;
+    }
 };
 
-USTRUCT()
+USTRUCT(BlueprintType)
 struct FTileEntry : public FFastArraySerializerItem
 {
     GENERATED_BODY()
 
-    UPROPERTY()
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
     FTile Tile;
 };
 
-USTRUCT()
+USTRUCT(BlueprintType)
 struct FTileArray : public FFastArraySerializer
 {
     GENERATED_BODY()
@@ -54,10 +75,22 @@ struct FTileArray : public FFastArraySerializer
     FOnTileRemoved OnTileRemoved;
     FOnTileChanged OnTileChanged;
 
-    UPROPERTY()
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
     TArray<FTileEntry> Items;
 
-    class AMyPlayerState* Owner = nullptr;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    class AMPlayerState* Owner = nullptr;
+
+    int32 FindElemByID(int32 TargetId)
+    {
+        for (int32 i = 0; i < Items.Num(); ++i) {
+            if (Items[i].Tile.Id == TargetId) {
+                return i;
+            }
+        }
+
+        return -1;
+    }
 
     void AddTile(const FTile& Tile)
     {
@@ -67,13 +100,38 @@ struct FTileArray : public FFastArraySerializer
         MarkItemDirty(NewItem);
     }
 
-    void RemoveTile(int32 Index)
+    void RemoveTile(int32 Id)
     {
+        int32 Index = FindElemByID(Id);
+        if (Index < 0) {
+            return;
+        }
+
         if (Items.IsValidIndex(Index))
         {
             Items.RemoveAt(Index);
             MarkArrayDirty();
         }
+    }
+
+    TArray<FTile> GetTiles()
+    {
+        TArray<FTile> Tiles;
+        for (int32 i = 0; i < Items.Num(); ++i)
+        {
+            Tiles.Add(Items[i].Tile);
+        }
+        return Tiles;
+    }
+
+    FTile operator[](int Index)
+    {
+        return Items[Index].Tile;
+    }
+
+    int32 Num()
+    {
+        return Items.Num();
     }
 
     bool NetDeltaSerialize(FNetDeltaSerializeInfo& DeltaParms)

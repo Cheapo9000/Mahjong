@@ -4,15 +4,17 @@
 */
 
 #include "MPlayerState.h"
+#include "MGameMode.h"
+#include "MGameState.h"
 #include "Net/UnrealNetwork.h"
 
-void AMPlayerState::SetPlayerName(const FString& NewName)
+void AMPlayerState::SetName(const FString& NewName)
 {
     if (HasAuthority())
     {
         // We are the server
-        Name = NewName;
-        OnPlayerNameChanged.Broadcast(Name);
+        SetPlayerName(NewName);
+        OnPlayerNameChanged.Broadcast(NewName);
     }
     else
     {
@@ -25,7 +27,23 @@ void AMPlayerState::SetPlayerSeatPosition(const int32& NewSeat)
 {
     if (HasAuthority())
     {
+        AMGameMode* GM = Cast<AMGameMode>(GetWorld()->GetAuthGameMode());
+
+        if (!GM || NewSeat > GM->GetMaxPlayers())
+        {
+            return;
+        }
+
         // We are the server
+        OldFlags = Flags;
+        if (NewSeat < 0) 
+        {
+            Flags &= ~EFlags::Seated;
+        }
+        else 
+        {
+            Flags |= EFlags::Seated;
+        }
         Seat = NewSeat;
         OnPlayerSeatPositionChanged.Broadcast(Seat);
     }
@@ -50,7 +68,7 @@ void AMPlayerState::SetPlayerHand(const TArray<FTile>& Hand)
 
         PrivateHand.MarkArrayDirty();
 
-        //OnPlayerHandChanged.Broadcast(PrivateHand);
+        OnPlayerHandChanged.Broadcast(PublicTiles);
     }
     else
     {
@@ -72,7 +90,7 @@ void AMPlayerState::Reset()
         PrivateHand.MarkArrayDirty();
         PublicTiles.MarkArrayDirty();
 
-        //OnPlayerHandChanged.Broadcast(PrivateHand);
+        OnPlayerHandChanged.Broadcast(PublicTiles);
     }
     else
     {
@@ -81,19 +99,9 @@ void AMPlayerState::Reset()
     }
 }
 
-void AMPlayerState::HandleNameChanged()
-{
-    // Update UI
-}
-
-void AMPlayerState::HandleSeatPositionChanged()
-{
-    // Update UI
-}
-
 void AMPlayerState::Server_SetPlayerName_Implementation(const FString& NewName)
 {
-    SetPlayerName(Name);
+    SetName(NewName);
 }
 
 void AMPlayerState::Server_SetPlayerSeatPosition_Implementation(const int32& NewSeat)
@@ -111,38 +119,77 @@ void AMPlayerState::Server_Reset_Implementation()
     Reset();
 }
 
-void AMPlayerState::OnRep_Name()
+void AMPlayerState::OnRep_PlayerName()
 {
-    UE_LOG(LogTemp, Warning, TEXT("OnRep_Name called!"));
+    Super::OnRep_PlayerName();
+
+    UE_LOG(LogTemp, Warning, TEXT("OnRep_PlayerName called!"));
     // Called on clients when PlayerName updates
-    OnPlayerNameChanged.Broadcast(Name);
+    OnPlayerNameChanged.Broadcast(GetPlayerName());
+}
+
+void AMPlayerState::OnRep_FlagUpdate()
+{
+    UE_LOG(LogTemp, Warning, TEXT("OnRep_FlagUpdate called!"));
+
+    //EFlags : uint8
+    //None = 0			    UMETA(DisplayName = "None"),
+    //Seated = 1 << 0		UMETA(DisplayName = "Seated"),
+    //CanPoG = 1 << 1		UMETA(DisplayName = "CanPengOrGong"),
+    //PengOGong = 1 << 2	UMETA(DisplayName = "Peng"),
+    //Gong = 1 << 3		    UMETA(DisplayName = "Gong"),
+    //WantsPoG = 1 << 4	    UMETA(DisplayName = "WantsPengOrGong")
+ 
+    // Called on clients when Player seat updates
+    if ((Flags & EFlags::Seated) != (OldFlags & EFlags::Seated)) {
+        if ((Flags & EFlags::Seated) == EFlags::Seated) {
+            OnPlayerSeated.Broadcast(Seat);
+        }
+        else {
+            OnPlayerStood.Broadcast(Seat);
+        }
+    }
+
+    OldFlags = Flags;
 }
 
 void AMPlayerState::OnRep_SeatPosition()
 {
     UE_LOG(LogTemp, Warning, TEXT("OnRep_SeatPosition called!"));
-    // Called on clients when PlayerName updates
+    // Called on clients when PlayerSeatPosition updates
     OnPlayerSeatPositionChanged.Broadcast(Seat);
 }
 
 void AMPlayerState::OnRep_Hand()
 {
     UE_LOG(LogTemp, Warning, TEXT("OnRep_Hand called!"));
-    // Called on clients when PlayerName updates
-    //OnPlayerHandChanged.Broadcast(PrivateHand);
+    // Called on clients when PlayerHand updates
+    OnPlayerHandChanged.Broadcast(PublicTiles);
 }
 
-void AMPlayerState::HandleHandChanged()
+void AMPlayerState::OnRep_TileDrawn()
 {
-    // Update UI
+    UE_LOG(LogTemp, Warning, TEXT("OnRep_TileDrawn called!"));
+
+    // Called on clients when DrawnTile updates
+    if (DrawnTile.Number > 0) {
+        UE_LOG(LogTemp, Warning, TEXT("Tile drawn from deck."));
+        OnPlayerDrewTile.Broadcast();
+    }
+    else {
+        UE_LOG(LogTemp, Warning, TEXT("Tile drawn from discard pile."));
+        OnPlayerDrewFromDiscard.Broadcast(DiscardDrawnTile);
+    }
 }
 
 void AMPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
     Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-    DOREPLIFETIME(AMPlayerState, Name);
+    DOREPLIFETIME_CONDITION(AMPlayerState, Flags, COND_OwnerOnly);
     DOREPLIFETIME(AMPlayerState, Seat);
     DOREPLIFETIME_CONDITION(AMPlayerState, PrivateHand, COND_OwnerOnly);
     DOREPLIFETIME(AMPlayerState, PublicTiles);
+    DOREPLIFETIME_CONDITION(AMPlayerState, DrawnTile, COND_OwnerOnly);
+    DOREPLIFETIME(AMPlayerState, DiscardDrawnTile);
 }
